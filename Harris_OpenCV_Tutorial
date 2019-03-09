@@ -1,0 +1,23 @@
+Tutorial from https://docs.opencv.org/3.3.0/dc/d0d/tutorial_py_features_harris.html
+OpenCV has the function cv2.cornerHarris() for this purpose. Its arguments are :
+
+    img - Input image, it should be grayscale and float32 type.
+    blockSize - It is the size of neighbourhood considered for corner detection
+    ksize - Aperture parameter of Sobel derivative used.
+    k - Harris detector free parameter in the equation.
+
+Example:
+
+import cv2
+import numpy as np
+
+pathName = r'chess.bmp'
+img = cv2.imread(pathName) #dtype = uint8
+gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY) #dtype = uint8
+gray = np.float32(gray) #dtype uint8 --> float32 
+dst = cv2.cornerHarris(gray,2,3,0.04) #dtype = float32 [yet value is between 0 and 255]
+dst = cv2.dilate(dst,None)
+img[dst>0.01*dst.max()]=[0,0,255] #mark the result
+cv2.imshow('dst',img)
+if cv2.waitKey(0) & 0xff == 27:
+    cv2.destroyAllWindows()
