@@ -14,7 +14,7 @@ def cornerFinder_Harris(img,win_size=5,sigmaXY=0.5,k=0.04,mode=2,param=5):
             mode 1: sort all corners by Intensity, select the best points using threshold 'param';
             mode 2: choose the best one of every 'param' x 'param' local regions
     Return:
-        A grayscale image(float32) with value from 0 to 255 which marks all the corners detected.
+        A grayscale image(float32) which marks all the corners detected with 1.0f and the rest with 0.0f.
     """
     #1. Get the gradiant of the whole image
     [gx,gy] = np.gradient(img)
@@ -48,18 +48,18 @@ def cornerFinder_Harris(img,win_size=5,sigmaXY=0.5,k=0.04,mode=2,param=5):
         mask=Intensity>0
         group_X=shape_X//param
         group_Y=shape_Y//param
-        #to the main part
+        #for the main part
         for step_X in range(group_X-1):
             for step_Y in range(group_Y-1):
                 pad=Intensity[(step_X)*param:(step_X+1)*param,(step_Y)*param:(step_Y+1)*param]
                 mask[(step_X)*param:(step_X+1)*param,(step_Y)*param:(step_Y+1)*param]=(pad>0.001)*(pad==pad.max())
                 
-        #to the last line ((step_Y+1)*param will exceed the boundary)
+        #for the last line ((step_Y+1)*param will exceed the boundary)
         for step_X in range(group_X-1):
             pad=Intensity[(step_X)*param:(step_X+1)*param,(step_Y)*param:shape_Y]
             mask[(step_X)*param:(step_X+1)*param,(step_Y)*param:shape_Y]=(pad>0.001)*(pad==pad.max())
             
-        #to the last column((step_X+1)*param will exceed the boundary)
+        #for the last column((step_X+1)*param will exceed the boundary)
         for step_Y in range(group_Y-1):
             pad=Intensity[(step_X)*param:shape_X, (step_Y)*param:(step_Y+1)*param]
             mask[(step_X)*param:shape_X, (step_Y)*param:(step_Y+1)*param]=(pad>0.001)*(pad==pad.max())
