@@ -3,16 +3,20 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.image as image
 
-def cornerFinder_Moravec(img,win_grad=5,win_sup=7):
+def cornerFinder_Moravec(img,win_grad=5,win_sup=7,threshold=100):
     """
     win_supeters:
         img: input gray image, grayscale(0-255)
         win_grad: window size for the window calculating IV(Interest Value)
                   IV: the sum of squares of d-value between the middle pixel and neigbour pixels along four directions
         win_sup: non-maximum suppression window size
+        threshold: Experience threshold, used to prepare data before the Non-maximun suppresion
     Return:
         A grayscale image(float32) which marks all the corners detected with 1.0f and the rest with 0.0f.
     """
+    if(win_grad>win_sup):
+        print('Invalid window size')
+        return img
     #1. Data preperation: calculating the d-value of four directions.
     #   This will save runtime of 'pow' function
     #1.1 Data preperation:
@@ -51,31 +55,48 @@ def cornerFinder_Moravec(img,win_grad=5,win_sup=7):
 
     #2. Get IV(Interest Value) of each pixel and implement Non-maximum suppression on them.
     shape_X,shape_Y = img.shape
+    IV=np.zeros((shape_X,shape_Y,4))
+    for c in range(int(win_grad/2),shape_X-int(win_grad/2)):
+        for r in range(int(win_grad/2),shape_Y-int(win_grad/2)):
+            for k in range(-int(win_grad/2),int(win_grad/2)):
+                IV[c,r,0]=IV[c,r,0]+diff_R[c+k,r]
+                IV[c,r,1]=IV[c,r,1]+diff_UR[c+k,r+k]
+                IV[c,r,2]=IV[c,r,2]+diff_U[c,r+k]
+                IV[c,r,3]=IV[c,r,3]+diff_UL[c-k,r+k]
+    IV_MIN = IV.min(2) # NOTIC: IF YOU USE IV.max(2), THEN YOU CAN ACQUIRE EDGES INSTEAD OF CORNERS
+    mask = IV_MIN<win_grad*threshold #delete the point which has IV_MIN value larger than win_grad*threshold (an experience threshold)
+    IV_MIN[mask]=0
+
+    #Non-maximum suppression
+    output_img = np.zeros((shape_X,shape_Y))
     group_X=shape_X//win_sup
     group_Y=shape_Y//win_sup
+    #STEP 1: Pick out the largest pixels
+
     #for the main part
     for step_X in range(group_X-1):
         for step_Y in range(group_Y-1):
-            
-            # pad=img[(step_X)*win_sup:(step_X+1)*win_sup,(step_Y)*win_sup:(step_Y+1)*win_sup]
-            # for i in range(win_sup):
-            #     for j in range(win_sup):
-            #         IV=np.zeros(4)
-            #         IV[0]=
+            pad=IV_MIN[(step_X)*win_sup:(step_X+1)*win_sup,(step_Y)*win_sup:(step_Y+1)*win_sup]
+            x,y=np.where(pad==pad.max())
+            output_img[x+(step_X)*win_sup,y+(step_Y)*win_sup]=1
         
     #for the last line ((step_Y+1)*win_sup will exceed the boundary)
     for step_X in range(group_X-1):
-        # pad=img[(step_X)*win_sup:(step_X+1)*win_sup,(step_Y)*win_sup:shape_Y]
-        # mask[(step_X)*win_sup:(step_X+1)*win_sup,(step_Y)*win_sup:shape_Y]=(pad>0.001)*(pad==pad.max())
-            
+        pad=IV_MIN[(step_X)*win_sup:(step_X+1)*win_sup,(step_Y)*win_sup:shape_Y]
+        x,y=np.where(pad==pad.max())
+        output_img[x+(step_X)*win_sup,y+(step_Y)*win_sup]=1
         
     #for the last column((step_X+1)*win_sup will exceed the boundary)
     for step_Y in range(group_Y-1):
-        # pad=img[(step_X)*win_sup:shape_X, (step_Y)*win_sup:(step_Y+1)*win_sup]
-        # mask[(step_X)*win_sup:shape_X, (step_Y)*win_sup:(step_Y+1)*win_sup]=(pad>0.001)*(pad==pad.max())
+        pad=IV_MIN[(step_X)*win_sup:shape_X, (step_Y)*win_sup:(step_Y+1)*win_sup]
+        x,y=np.where(pad==pad.max())
+        output_img[x+(step_X)*win_sup,y+(step_Y)*win_sup]=1
+    
+    #STEP 2: delete the false pixels
+    output_img[mask]=0
 
-
-    return img
+    cv2.imshow('1',output_img)
+    return output_img
 
 # read the image
 pathName = r'Image\chess.bmp'
